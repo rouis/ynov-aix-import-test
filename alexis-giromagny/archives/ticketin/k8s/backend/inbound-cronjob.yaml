@@ -1,0 +1,73 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: inbound-mail-poll
+  namespace: ticketin
+spec:
+  schedule: "* * * * *"
+  concurrencyPolicy: Forbid
+  startingDeadlineSeconds: 60
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          restartPolicy: Never
+          imagePullSecrets:
+            - name: ghcr-pull
+          containers:
+            - name: poll-inbound
+              image: ghcr.io/rookuro/ticketin-backend
+              imagePullPolicy: IfNotPresent
+              command: ["node", "dist/src/poll-inbound"]
+              resources:
+                requests:
+                  cpu: 100m
+                  memory: 256Mi
+                limits:
+                  cpu: 500m
+                  memory: 512Mi
+              env:
+                - name: INBOUND_POLL_MODE
+                  value: "external"
+                - name: INBOUND_MAIL_ENABLED
+                  value: "true"
+                - name: DATABASE_URL
+                  valueFrom: { secretKeyRef: { name: backend-secret, key: DATABASE_URL } }
+                - name: S3_ENDPOINT
+                  valueFrom: { secretKeyRef: { name: backend-secret, key: S3_ENDPOINT } }
+                - name: S3_BUCKET
+                  valueFrom: { secretKeyRef: { name: backend-secret, key: S3_BUCKET } }
+                - name: S3_ACCESS_KEY
+                  valueFrom: { secretKeyRef: { name: backend-secret, key: S3_ACCESS_KEY } }
+                - name: S3_SECRET_KEY
+                  valueFrom: { secretKeyRef: { name: backend-secret, key: S3_SECRET_KEY } }
+                - name: MAIL_FROM
+                  valueFrom: { secretKeyRef: { name: backend-secret, key: MAIL_FROM } }
+                - name: SMTP_HOST
+                  valueFrom: { secretKeyRef: { name: backend-secret, key: SMTP_HOST } }
+                - name: SMTP_PORT
+                  valueFrom: { secretKeyRef: { name: backend-secret, key: SMTP_PORT } }
+                - name: SMTP_USER
+                  valueFrom: { secretKeyRef: { name: backend-secret, key: SMTP_USER } }
+                - name: SMTP_PASS
+                  valueFrom: { secretKeyRef: { name: backend-secret, key: SMTP_PASS } }
+                - name: IMAP_HOST
+                  valueFrom: { secretKeyRef: { name: backend-secret, key: IMAP_HOST } }
+                - name: IMAP_PORT
+                  valueFrom: { secretKeyRef: { name: backend-secret, key: IMAP_PORT } }
+                - name: IMAP_USER
+                  valueFrom: { secretKeyRef: { name: backend-secret, key: IMAP_USER } }
+                - name: IMAP_PASS
+                  valueFrom: { secretKeyRef: { name: backend-secret, key: IMAP_PASS } }
+                - name: IMAP_TLS
+                  valueFrom: { secretKeyRef: { name: backend-secret, key: IMAP_TLS } }
+                - name: IMAP_FOLDER
+                  valueFrom: { secretKeyRef: { name: backend-secret, key: IMAP_FOLDER } }
+                - name: INBOUND_ALLOWED_DOMAINS
+                  valueFrom: { secretKeyRef: { name: backend-secret, key: INBOUND_ALLOWED_DOMAINS } }
+                - name: INBOUND_ORGANIZATION_ID
+                  valueFrom: { secretKeyRef: { name: backend-secret, key: INBOUND_ORGANIZATION_ID } }
+                - name: INBOUND_DEFAULT_CATEGORY
+                  valueFrom: { secretKeyRef: { name: backend-secret, key: INBOUND_DEFAULT_CATEGORY } }

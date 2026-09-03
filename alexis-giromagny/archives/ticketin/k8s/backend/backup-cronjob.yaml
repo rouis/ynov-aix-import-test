@@ -1,0 +1,48 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: postgres-backup
+  namespace: ticketin
+spec:
+  schedule: "0 2 * * *"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          restartPolicy: Never
+          containers:
+            - name: pg-dump
+              image: postgres:17-alpine
+              command:
+                - /bin/sh
+                - -c
+                - >
+                  set -e;
+                  STAMP=$(date +%Y%m%d-%H%M%S);
+                  pg_dump "$DATABASE_URL" | gzip > "/backups/ticketin-$STAMP.sql.gz";
+                  echo "Dump écrit : ticketin-$STAMP.sql.gz";
+                  find /backups -name 'ticketin-*.sql.gz' -mtime +7 -delete;
+                  echo "Rétention appliquée (7 jours)."
+              env:
+                - name: DATABASE_URL
+                  valueFrom:
+                    secretKeyRef:
+                      name: backend-secret
+                      key: DATABASE_URL
+              volumeMounts:
+                - name: backup
+                  mountPath: /backups
+              resources:
+                requests:
+                  cpu: 50m
+                  memory: 128Mi
+                limits:
+                  cpu: 250m
+                  memory: 256Mi
+          volumes:
+            - name: backup
+              persistentVolumeClaim:
+                claimName: postgres-backup

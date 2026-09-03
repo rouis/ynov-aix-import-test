@@ -1,0 +1,23 @@
+# Dépendances du package racine (scripts dev uniquement)
+/node_modules
+
+# Fichiers d'environnement (secrets) — ne jamais committer
+.env
+.env.*
+!.env.example
+
+# Secret k8s réel (utiliser secret.example.yaml comme modèle)
+/k8s/backend/secret.yaml
+session6.pdf
+
+# Clés SSH de déploiement — ne JAMAIS committer
+/deploy_key
+/deploy_key.pub
+
+# Outils & config locale (ne pas versionner)
+.agents/
+.claude/
+.idea/
+.vscode/
+docs/
+skills-lock.json

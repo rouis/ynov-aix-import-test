@@ -1,0 +1,18 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: https-redirect
+  namespace: ticketin
+spec:
+  parentRefs:
+    - name: tp-gateway
+      sectionName: http
+  hostnames:
+    - "app.ticket-in.fr"
+    - "api.ticket-in.fr"
+  rules:
+    - filters:
+        - type: RequestRedirect
+          requestRedirect:
+            scheme: https
+            statusCode: 301

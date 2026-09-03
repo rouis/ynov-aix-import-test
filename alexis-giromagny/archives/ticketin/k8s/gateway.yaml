@@ -1,0 +1,43 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: tp-gateway
+  namespace: ticketin
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+spec:
+  gatewayClassName: traefik
+  listeners:
+    - name: http
+      protocol: HTTP
+      port: 80
+      allowedRoutes:
+        namespaces:
+          from: Same
+    # Deux listeners HTTPS explicites (pas de wildcard : HTTP-01 ne sait pas
+    # émettre de cert wildcard). Les deux pointent vers le même Secret, et
+    # cert-manager produit un seul certificat SAN couvrant app. + api.
+    - name: https-app
+      protocol: HTTPS
+      port: 443
+      hostname: "app.ticket-in.fr"
+      allowedRoutes:
+        namespaces:
+          from: Same
+      tls:
+        mode: Terminate
+        certificateRefs:
+          - kind: Secret
+            name: ticketin-tls
+    - name: https-api
+      protocol: HTTPS
+      port: 443
+      hostname: "api.ticket-in.fr"
+      allowedRoutes:
+        namespaces:
+          from: Same
+      tls:
+        mode: Terminate
+        certificateRefs:
+          - kind: Secret
+            name: ticketin-tls

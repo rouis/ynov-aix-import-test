@@ -1,0 +1,135 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Organization {
+  id         String   @id @default(uuid())
+  name       String
+  created_at DateTime @default(now())
+
+  users   User[]
+  tickets Ticket[]
+}
+
+model User {
+  id             String     @id @default(uuid())
+  organizationId String
+  email          String     @unique
+  firstname      String? // null tant que le compte n'est pas activé
+  lastname       String?
+  password       String? // null tant que le compte n'est pas activé
+  role           Role
+  status         UserStatus @default(PENDING)
+  created_at     DateTime   @default(now())
+
+  organization    Organization   @relation(fields: [organizationId], references: [id])
+  tickets         Ticket[]       @relation("CreatedTickets")
+  assignedTickets Ticket[]       @relation("AssignedTickets")
+  tokens          AccountToken[]
+
+  @@index([organizationId])
+}
+
+model AccountToken {
+  id         String    @id @default(uuid())
+  tokenHash  String    @unique // on stocke le HASH ; le lien contient le token brut
+  userId     String
+  type       TokenType @default(ACTIVATION)
+  expires_at DateTime
+  used_at    DateTime? // usage unique
+  created_at DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model Ticket {
+  id              String    @id @default(uuid())
+  organizationId  String
+  title           String
+  description     String
+  technician_note String?
+  status          Status    @default(ON_HOLD)
+  priority        Priority  @default(NONE)
+  category        String
+  requester_email String
+  assigned_to_id  String?
+  created_by_id   String
+  created_at      DateTime  @default(now())
+  updated_at      DateTime  @updatedAt
+  closed_at       DateTime?
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+  createdBy    User         @relation("CreatedTickets", fields: [created_by_id], references: [id])
+  assignedTo   User?        @relation("AssignedTickets", fields: [assigned_to_id], references: [id])
+  attachments  TicketAttachment[]
+
+  @@index([organizationId])
+}
+
+model TicketAttachment {
+  id           String   @id @default(uuid())
+  ticketId     String
+  storage_key  String
+  filename     String
+  content_type String
+  size         Int
+  created_at   DateTime @default(now())
+
+  ticket Ticket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+
+  @@index([ticketId])
+}
+
+model Client {
+  id            String   @id @default(uuid())
+  name          String
+  contact_email String
+  contact_phone String
+  created_at    DateTime @default(now())
+  update_at     DateTime
+}
+
+enum Status {
+  OPEN
+  IN_PROGRESS
+  ON_HOLD
+  RESOLVE
+  CLOSED
+}
+
+enum Priority {
+  NONE
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum Role {
+  ADMIN
+  AGENT
+  CLIENT
+}
+
+enum UserStatus {
+  PENDING
+  ACTIVE
+}
+
+enum TokenType {
+  ACTIVATION
+  PASSWORD_RESET
+}

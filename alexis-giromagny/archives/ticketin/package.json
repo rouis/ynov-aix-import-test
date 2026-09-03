@@ -1,0 +1,13 @@
+{
+  "name": "ticketin",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Ticketin monorepo — scripts pour lancer backend + frontend ensemble",
+  "scripts": {
+    "dev": "concurrently -n back,front -c blue,magenta \"cd backend && npm run start:dev\" \"cd frontend && npm run dev -- -p 3001\"",
+    "install:all": "npm install && npm --prefix backend install && npm --prefix frontend install"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1"
+  }
+}
